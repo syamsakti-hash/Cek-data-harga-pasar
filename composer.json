@@ -1,0 +1,9 @@
+{
+  "name": "syamsakti/cek-data-harga-pasar",
+  "description": "Aplikasi PHP untuk membandingkan harga pasar kendaraan dari file CSV/XLSX dan mengekspor hasil ke Excel.",
+  "type": "project",
+  "require": {
+    "php": ">=8.1",
+    "phpoffice/phpspreadsheet": "^2.2"
+  }
+}
