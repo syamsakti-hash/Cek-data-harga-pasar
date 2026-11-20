@@ -1,4 +1,3 @@
-<h1>Cek Harga Pasar</h1> 
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -28,7 +27,7 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
     body { background: var(--bg); color: var(--text); padding: 24px; line-height: 1.5; }
-    .container { max-width: 1280px; margin: 0 auto; }
+    .container { max-width: 1320px; margin: 0 auto; }
 
     header { margin-bottom: 24px; }
     header h1 { font-size: 1.6rem; font-weight: 700; color: var(--text); }
@@ -69,6 +68,7 @@
     }
 
     .btn-group { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .options-group { display: flex; flex-direction: column; gap: 6px; }
 
     button {
       padding: 10px 18px;
@@ -86,9 +86,9 @@
     .btn-success { background: #15803d; color: #fff; }
     .btn-success:hover:not(:disabled) { background: #166534; }
     .btn-outline { background: #fff; color: var(--text); border: 1px solid var(--border); }
-    .btn-outline:hover { background: #f1f5f9; }
+    .btn-outline:hover:not(:disabled) { background: #f1f5f9; }
 
-    .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text); cursor: pointer; }
+    .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--text); cursor: pointer; }
 
     .alert {
       padding: 14px 18px;
@@ -151,7 +151,7 @@
       border: 1px solid var(--border);
       border-radius: 8px;
       font-size: 0.9rem;
-      min-width: 240px;
+      min-width: 260px;
     }
 
     .table-wrapper { overflow-x: auto; max-height: 540px; }
@@ -173,6 +173,22 @@
     .badge-tetap { background: var(--same-bg); color: var(--same-text); }
     .badge-missing { background: var(--missing-bg); color: var(--missing-text); }
 
+    .pagination-bar {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      background: #f8fafc;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    .pagination-controls { display: flex; align-items: center; gap: 8px; }
+    .pagination-controls button { padding: 6px 12px; font-size: 0.84rem; }
+
     .hidden { display: none !important; }
   </style>
 </head>
@@ -180,20 +196,20 @@
   <div class="container">
     <header>
       <h1>Pembanding Harga Pasar Kendaraan</h1>
-      <p>Upload file <strong>Harga Pasar Existing</strong> dan <strong>Harga Pasar Eksternal</strong> (.xlsx, .xls, atau .csv) untuk mendeteksi kenaikan/penurunan harga serta mengunduh file Excel sesuai template hasil.</p>
+      <p>Membandingkan seluruh baris data pada <strong>Harga Pasar Eksternal</strong> terhadap master <strong>Harga Pasar Existing</strong> (.xlsx, .xls, atau .csv) dan mengekspor hasil lengkap dengan pemisah ribuan.</p>
     </header>
 
     <!-- Area Upload Dua File -->
     <div class="upload-grid">
       <div class="upload-card" id="cardExisting">
-        <h3>1. Upload Harga Pasar Existing</h3>
+        <h3>1. Upload Harga Pasar Existing (Master)</h3>
         <div class="cols">Kolom: VEHICLE_ID, VEHICLE_MODEL, TAHUN, HARGA KENDARAAN SEHATI</div>
         <input type="file" id="fileExisting" accept=".xlsx,.xls,.csv" />
         <div class="file-status" id="statusExisting"></div>
       </div>
 
       <div class="upload-card" id="cardEksternal">
-        <h3>2. Upload Harga Pasar Eksternal</h3>
+        <h3>2. Upload Harga Pasar Eksternal (Data Pembanding)</h3>
         <div class="cols">Kolom: VEHICLE_ID, VEHICLE_MODEL, TAHUN, HARGA PASAR OLX</div>
         <input type="file" id="fileEksternal" accept=".xlsx,.xls,.csv" />
         <div class="file-status" id="statusEksternal"></div>
@@ -207,10 +223,16 @@
         <button class="btn-success" id="btnDownload" disabled>Download Excel Hasil (.xlsx)</button>
         <button class="btn-outline" id="btnReset">Reset</button>
       </div>
-      <label class="checkbox-label">
-        <input type="checkbox" id="autoDownload" checked />
-        Otomatis download file Excel (.xlsx) setelah proses selesai
-      </label>
+      <div class="options-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="autoDownload" checked />
+          Otomatis download file Excel (.xlsx) setelah proses selesai
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="includeUnmatchedExisting" />
+          Gabungkan juga data Existing yang tidak ada di Eksternal ke tabel utama
+        </label>
+      </div>
     </div>
 
     <div id="alertBox" class="alert"></div>
@@ -235,7 +257,7 @@
           <div class="value" id="statTetap">0</div>
         </div>
         <div class="stat-card stat-missing">
-          <div class="label">Tidak Ada / Data Baru</div>
+          <div class="label">Tidak Ada / Baru</div>
           <div class="value" id="statMissing">0</div>
         </div>
       </div>
@@ -257,6 +279,7 @@
           <table>
             <thead>
               <tr>
+                <th>No</th>
                 <th>vehicle_id</th>
                 <th>vehicle_model</th>
                 <th>tahun</th>
@@ -271,6 +294,15 @@
             <tbody id="tableBody"></tbody>
           </table>
         </div>
+
+        <div class="pagination-bar">
+          <div id="pageInfo">Menampilkan 0 - 0 dari 0 baris</div>
+          <div class="pagination-controls">
+            <button class="btn-outline" id="btnPrevPage">‹ Sebelumnya</button>
+            <span id="pageNumberText">Halaman 1 / 1</span>
+            <button class="btn-outline" id="btnNextPage">Berikutnya ›</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -279,7 +311,11 @@
     let dataExisting = null;
     let dataEksternal = null;
     let hasilPerbandingan = [];
+    let existingTidakAdaDiOlx = [];
+    let filteredData = [];
     let currentFilter = 'ALL';
+    let currentPage = 1;
+    const PAGE_SIZE = 200;
 
     const fileExistingInput = document.getElementById('fileExisting');
     const fileEksternalInput = document.getElementById('fileEksternal');
@@ -308,24 +344,36 @@
       return normalized;
     }
 
-    // Parsing angka harga (menangani format "Rp 15.000.000", "15,000,000", maupun angka murni)
+    // Parsing angka harga (menangani format "Rp 15.000.000", "15.000.000,00", "15,000,000", maupun angka murni)
     function parseHarga(val) {
       if (val === null || val === undefined || val === '') return 0;
       if (typeof val === 'number') return isNaN(val) ? 0 : Math.round(val);
       let str = String(val).trim().replace(/rp/gi, '').replace(/\s+/g, '');
-      // Jika format ribuan Indonesia menggunakan titik (misal 15.500.000)
-      if (/^\d{1,3}(\.\d{3})+$/.test(str)) {
+
+      // Format Indonesia dengan ribuan titik dan desimal koma (misal: 15.500.000,00)
+      if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(str)) {
+        str = str.replace(/\./g, '').replace(',', '.');
+      }
+      // Format internasional dengan ribuan koma dan desimal titik (misal: 15,500,000.00)
+      else if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(str)) {
+        str = str.replace(/,/g, '');
+      }
+      // Format ribuan titik tanpa desimal (misal: 15.500.000)
+      else if (/^-?\d{1,3}(\.\d{3})+$/.test(str)) {
         str = str.replace(/\./g, '');
-      } else if (/^\d{1,3}(,\d{3})+$/.test(str)) {
+      }
+      // Format ribuan koma tanpa desimal (misal: 15,500,000)
+      else if (/^-?\d{1,3}(,\d{3})+$/.test(str)) {
         str = str.replace(/,/g, '');
       } else {
         str = str.replace(/[^0-9.-]/g, '');
       }
+
       const num = parseFloat(str);
       return isNaN(num) ? 0 : Math.round(num);
     }
 
-    function formatRupiah(num) {
+    function formatRibuan(num) {
       return new Intl.NumberFormat('id-ID').format(num || 0);
     }
 
@@ -340,7 +388,6 @@
             let workbook;
             if (isCSV) {
               const text = e.target.result;
-              // Deteksi delimiter titik koma (;) khas Excel Indonesia
               const firstLine = text.split(/\r?\n/)[0] || '';
               const sep = (firstLine.split(';').length > firstLine.split(',').length) ? ';' : ',';
               workbook = XLSX.read(text, { type: 'string', FS: sep });
@@ -388,7 +435,7 @@
         }
         dataExisting = rows;
         document.getElementById('cardExisting').classList.add('has-file');
-        document.getElementById('statusExisting').textContent = `✓ Berhasil dimuat: ${file.name} (${rows.length} baris)`;
+        document.getElementById('statusExisting').textContent = `✓ Berhasil dimuat: ${file.name} (${formatRibuan(rows.length)} baris)`;
         updateButtonState();
       } catch (err) {
         showAlert('Error membaca File Existing: ' + err.message);
@@ -412,35 +459,21 @@
         }
         dataEksternal = rows;
         document.getElementById('cardEksternal').classList.add('has-file');
-        document.getElementById('statusEksternal').textContent = `✓ Berhasil dimuat: ${file.name} (${rows.length} baris)`;
+        document.getElementById('statusEksternal').textContent = `✓ Berhasil dimuat: ${file.name} (${formatRibuan(rows.length)} baris)`;
         updateButtonState();
       } catch (err) {
         showAlert('Error membaca File Eksternal: ' + err.message);
       }
     });
 
-    // Proses Utama Pembandingan
+    // Proses Utama Pembandingan: Mempertahankan seluruh baris File Eksternal (34.353 baris)
     btnCompare.addEventListener('click', () => {
       clearAlert();
-      const mapEksternal = new Map();
-      const matchedKeys = new Set();
 
-      // Index data eksternal berdasarkan VEHICLE_ID + TAHUN
-      dataEksternal.forEach((row) => {
-        const id = String(row.VEHICLE_ID || '').trim();
-        const tahun = String(row.TAHUN || '').trim();
-        const key = `${id.toUpperCase()}__${tahun}`;
-        mapEksternal.set(key, {
-          vehicle_id: id,
-          vehicle_model: String(row.VEHICLE_MODEL || '').trim(),
-          tahun: tahun,
-          harga_pasar_olx: parseHarga(row.HARGA_PASAR_OLX)
-        });
-      });
+      // 1. Bangun indeks lookup dari File Existing berdasarkan VEHICLE_ID + TAHUN
+      const mapExisting = new Map();
+      const matchedExistingKeys = new Set();
 
-      const results = [];
-
-      // 1. Cek semua data Existing terhadap Eksternal
       dataExisting.forEach((row) => {
         const id = String(row.VEHICLE_ID || '').trim();
         const model = String(row.VEHICLE_MODEL || '').trim();
@@ -448,19 +481,52 @@
         const hargaSehati = parseHarga(row.HARGA_KENDARAAN_SEHATI);
         const key = `${id.toUpperCase()}__${tahun}`;
 
-        if (mapEksternal.has(key)) {
-          matchedKeys.add(key);
-          const ext = mapEksternal.get(key);
-          const hargaOlx = ext.harga_pasar_olx;
+        if (!mapExisting.has(key)) {
+          mapExisting.set(key, {
+            vehicle_id: id,
+            vehicle_model: model,
+            tahun: tahun,
+            harga_kendaraan_sehati: hargaSehati
+          });
+        } else {
+          // Jika ada duplikat di Existing, pertahankan yang memiliki harga > 0
+          const prev = mapExisting.get(key);
+          if (prev.harga_kendaraan_sehati <= 0 && hargaSehati > 0) {
+            prev.harga_kendaraan_sehati = hargaSehati;
+          }
+          if (!prev.vehicle_model && model) {
+            prev.vehicle_model = model;
+          }
+        }
+      });
+
+      const results = [];
+
+      // 2. Iterasi SEMUA baris di File Eksternal (1-per-1 tanpa deduplikasi)
+      dataEksternal.forEach((row) => {
+        const id = String(row.VEHICLE_ID || '').trim();
+        const modelExt = String(row.VEHICLE_MODEL || '').trim();
+        const tahun = String(row.TAHUN || '').trim();
+        const hargaOlx = parseHarga(row.HARGA_PASAR_OLX);
+        const key = `${id.toUpperCase()}__${tahun}`;
+
+        if (mapExisting.has(key)) {
+          matchedExistingKeys.add(key);
+          const master = mapExisting.get(key);
+          const hargaSehati = master.harga_kendaraan_sehati;
 
           let hargaBaru, selisih, statusPerubahan, statusData;
 
           if (hargaOlx <= 0) {
-            // Ada di daftar eksternal namun nilai harga kosong / 0
             hargaBaru = hargaSehati;
             selisih = 0;
             statusPerubahan = 'TIDAK ADA HARGA OLX';
             statusData = 'TIDAK ADA';
+          } else if (hargaSehati <= 0) {
+            hargaBaru = hargaOlx;
+            selisih = 0;
+            statusPerubahan = 'HARGA EXISTING KOSONG';
+            statusData = 'DITEMUKAN';
           } else {
             hargaBaru = hargaOlx;
             selisih = hargaBaru - hargaSehati;
@@ -476,7 +542,7 @@
 
           results.push({
             vehicle_id: id,
-            vehicle_model: model || ext.vehicle_model,
+            vehicle_model: modelExt || master.vehicle_model,
             tahun: isNaN(Number(tahun)) || tahun === '' ? tahun : Number(tahun),
             harga_kendaraan_sehati: hargaSehati,
             harga_pasar_olx: hargaOlx,
@@ -486,14 +552,32 @@
             STATUS: statusData
           });
         } else {
-          // Data ada di Existing, namun TIDAK ADA di Eksternal
+          // Baris di File Eksternal yang tidak ditemukan di File Existing
           results.push({
             vehicle_id: id,
-            vehicle_model: model,
+            vehicle_model: modelExt,
             tahun: isNaN(Number(tahun)) || tahun === '' ? tahun : Number(tahun),
-            harga_kendaraan_sehati: hargaSehati,
+            harga_kendaraan_sehati: 0,
+            harga_pasar_olx: hargaOlx,
+            harga_baru: hargaOlx,
+            selisih_perubahan: 0,
+            status_perubahan: 'TIDAK ADA DI EXISTING',
+            STATUS: 'TIDAK ADA'
+          });
+        }
+      });
+
+      // 3. Kumpulkan data Existing yang tidak muncul di File Eksternal
+      const unmatchedExistingList = [];
+      mapExisting.forEach((master, key) => {
+        if (!matchedExistingKeys.has(key)) {
+          unmatchedExistingList.push({
+            vehicle_id: master.vehicle_id,
+            vehicle_model: master.vehicle_model,
+            tahun: isNaN(Number(master.tahun)) || master.tahun === '' ? master.tahun : Number(master.tahun),
+            harga_kendaraan_sehati: master.harga_kendaraan_sehati,
             harga_pasar_olx: 0,
-            harga_baru: hargaSehati,
+            harga_baru: master.harga_kendaraan_sehati,
             selisih_perubahan: 0,
             status_perubahan: 'TIDAK ADA DATA OLX',
             STATUS: 'TIDAK ADA DI OLX'
@@ -501,24 +585,14 @@
         }
       });
 
-      // 2. Cek data yang hanya ada di Eksternal (tidak ada di Existing)
-      mapEksternal.forEach((ext, key) => {
-        if (!matchedKeys.has(key)) {
-          results.push({
-            vehicle_id: ext.vehicle_id,
-            vehicle_model: ext.vehicle_model,
-            tahun: isNaN(Number(ext.tahun)) || ext.tahun === '' ? ext.tahun : Number(ext.tahun),
-            harga_kendaraan_sehati: 0,
-            harga_pasar_olx: ext.harga_pasar_olx,
-            harga_baru: ext.harga_pasar_olx,
-            selisih_perubahan: 0,
-            status_perubahan: 'DATA BARU',
-            STATUS: 'TIDAK ADA DI EXISTING'
-          });
-        }
-      });
+      existingTidakAdaDiOlx = unmatchedExistingList;
 
-      hasilPerbandingan = results;
+      if (document.getElementById('includeUnmatchedExisting').checked) {
+        hasilPerbandingan = results.concat(unmatchedExistingList);
+      } else {
+        hasilPerbandingan = results;
+      }
+
       updateDashboard();
       btnDownload.disabled = false;
 
@@ -534,14 +608,15 @@
       const tetap = hasilPerbandingan.filter(r => r.status_perubahan === 'TETAP').length;
       const missing = total - (naik + turun + tetap);
 
-      document.getElementById('statTotal').textContent = total;
-      document.getElementById('statNaik').textContent = naik;
-      document.getElementById('statTurun').textContent = turun;
-      document.getElementById('statTetap').textContent = tetap;
-      document.getElementById('statMissing').textContent = missing;
+      document.getElementById('statTotal').textContent = formatRibuan(total);
+      document.getElementById('statNaik').textContent = formatRibuan(naik);
+      document.getElementById('statTurun').textContent = formatRibuan(turun);
+      document.getElementById('statTetap').textContent = formatRibuan(tetap);
+      document.getElementById('statMissing').textContent = formatRibuan(missing);
 
       document.getElementById('resultContainer').classList.remove('hidden');
-      renderTable();
+      currentPage = 1;
+      applyFilterAndRender();
     }
 
     function getBadgeClass(statusPerubahan) {
@@ -551,11 +626,10 @@
       return 'badge-missing';
     }
 
-    function renderTable() {
+    function applyFilterAndRender() {
       const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
-      const tbody = document.getElementById('tableBody');
 
-      const filtered = hasilPerbandingan.filter((row) => {
+      filteredData = hasilPerbandingan.filter((row) => {
         if (currentFilter === 'NAIK' && row.status_perubahan !== 'NAIK') return false;
         if (currentFilter === 'TURUN' && row.status_perubahan !== 'TURUN') return false;
         if (currentFilter === 'TETAP' && row.status_perubahan !== 'TETAP') return false;
@@ -568,22 +642,72 @@
         return true;
       });
 
-      tbody.innerHTML = filtered.map((r) => `
+      renderTablePage();
+    }
+
+    function renderTablePage() {
+      const tbody = document.getElementById('tableBody');
+      const totalRows = filteredData.length;
+      const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const startIdx = (currentPage - 1) * PAGE_SIZE;
+      const endIdx = Math.min(startIdx + PAGE_SIZE, totalRows);
+      const pageRows = filteredData.slice(startIdx, endIdx);
+
+      tbody.innerHTML = pageRows.map((r, idx) => `
         <tr>
+          <td>${formatRibuan(startIdx + idx + 1)}</td>
           <td>${r.vehicle_id}</td>
           <td>${r.vehicle_model}</td>
           <td>${r.tahun}</td>
-          <td class="num">${formatRupiah(r.harga_kendaraan_sehati)}</td>
-          <td class="num">${formatRupiah(r.harga_pasar_olx)}</td>
-          <td class="num"><strong>${formatRupiah(r.harga_baru)}</strong></td>
-          <td class="num">${r.selisih_perubahan > 0 ? '+' : ''}${formatRupiah(r.selisih_perubahan)}</td>
+          <td class="num">${formatRibuan(r.harga_kendaraan_sehati)}</td>
+          <td class="num">${formatRibuan(r.harga_pasar_olx)}</td>
+          <td class="num"><strong>${formatRibuan(r.harga_baru)}</strong></td>
+          <td class="num">${r.selisih_perubahan > 0 ? '+' : ''}${formatRibuan(r.selisih_perubahan)}</td>
           <td><span class="badge ${getBadgeClass(r.status_perubahan)}">${r.status_perubahan}</span></td>
           <td>${r.STATUS}</td>
         </tr>
       `).join('');
+
+      document.getElementById('pageInfo').textContent = totalRows
+        ? `Menampilkan ${formatRibuan(startIdx + 1)} - ${formatRibuan(endIdx)} dari ${formatRibuan(totalRows)} baris`
+        : 'Tidak ada data yang cocok dengan filter';
+      document.getElementById('pageNumberText').textContent = `Halaman ${formatRibuan(currentPage)} / ${formatRibuan(totalPages)}`;
+      document.getElementById('btnPrevPage').disabled = currentPage <= 1;
+      document.getElementById('btnNextPage').disabled = currentPage >= totalPages;
     }
 
-    // Export hasil ke file Excel (.xlsx) sesuai TEMPLATE HASIL
+    // Menerapkan format pemisah ribuan Excel (#,##0) ke sel angka di worksheet
+    function formatWorksheetNumbers(worksheet, rowCount) {
+      const priceCols = ['D', 'E', 'F']; // harga_kendaraan_sehati, harga_pasar_olx, harga_baru
+      for (let r = 2; r <= rowCount + 1; r++) {
+        priceCols.forEach((col) => {
+          const ref = `${col}${r}`;
+          if (worksheet[ref] && typeof worksheet[ref].v === 'number') {
+            worksheet[ref].z = '#,##0';
+          }
+        });
+        const diffRef = `G${r}`; // selisih_perubahan
+        if (worksheet[diffRef] && typeof worksheet[diffRef].v === 'number') {
+          worksheet[diffRef].z = '+#,##0;-#,##0;0';
+        }
+      }
+
+      worksheet['!cols'] = [
+        { wch: 16 }, // vehicle_id
+        { wch: 34 }, // vehicle_model
+        { wch: 10 }, // tahun
+        { wch: 24 }, // harga_kendaraan_sehati
+        { wch: 20 }, // harga_pasar_olx
+        { wch: 20 }, // harga_baru
+        { wch: 20 }, // selisih_perubahan
+        { wch: 24 }, // status_perubahan
+        { wch: 22 }  // STATUS
+      ];
+    }
+
+    // Export hasil ke file Excel (.xlsx) sesuai TEMPLATE HASIL dengan pemisah ribuan
     function exportToExcel() {
       if (!hasilPerbandingan.length) return;
 
@@ -600,22 +724,17 @@
       ];
 
       const worksheet = XLSX.utils.json_to_sheet(hasilPerbandingan, { header: headers });
-
-      // Atur lebar kolom agar rapi saat dibuka di Excel
-      worksheet['!cols'] = [
-        { wch: 16 }, // vehicle_id
-        { wch: 32 }, // vehicle_model
-        { wch: 10 }, // tahun
-        { wch: 24 }, // harga_kendaraan_sehati
-        { wch: 20 }, // harga_pasar_olx
-        { wch: 20 }, // harga_baru
-        { wch: 20 }, // selisih_perubahan
-        { wch: 22 }, // status_perubahan
-        { wch: 22 }  // STATUS
-      ];
+      formatWorksheetNumbers(worksheet, hasilPerbandingan.length);
 
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'HASIL_PERBANDINGAN');
+
+      // Sertakan sheet kedua berisi daftar Existing yang belum ada di Eksternal
+      if (existingTidakAdaDiOlx.length > 0) {
+        const wsUnmatched = XLSX.utils.json_to_sheet(existingTidakAdaDiOlx, { header: headers });
+        formatWorksheetNumbers(wsUnmatched, existingTidakAdaDiOlx.length);
+        XLSX.utils.book_append_sheet(workbook, wsUnmatched, 'EXISTING_TIDAK_ADA_DI_OLX');
+      }
 
       const today = new Date().toISOString().slice(0, 10);
       XLSX.writeFile(workbook, `HASIL_HARGA_PASAR_${today}.xlsx`);
@@ -628,15 +747,36 @@
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       e.target.classList.add('active');
       currentFilter = e.target.dataset.filter;
-      renderTable();
+      currentPage = 1;
+      applyFilterAndRender();
     });
 
-    document.getElementById('searchInput').addEventListener('input', renderTable);
+    document.getElementById('searchInput').addEventListener('input', () => {
+      currentPage = 1;
+      applyFilterAndRender();
+    });
+
+    document.getElementById('btnPrevPage').addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderTablePage();
+      }
+    });
+
+    document.getElementById('btnNextPage').addEventListener('click', () => {
+      const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderTablePage();
+      }
+    });
 
     btnReset.addEventListener('click', () => {
       dataExisting = null;
       dataEksternal = null;
       hasilPerbandingan = [];
+      existingTidakAdaDiOlx = [];
+      filteredData = [];
       fileExistingInput.value = '';
       fileEksternalInput.value = '';
       document.getElementById('cardExisting').classList.remove('has-file');
